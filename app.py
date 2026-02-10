@@ -1,27 +1,28 @@
-from flask import Flask, request, render_template_string
-import sqlite3
+from django.db import models
+from django.db import connection
+from django.db import connections
+from django.db.models.expressions import RawSQL
 
-app = Flask(__name__)
+value = input()
 
-@app.route('/cari', methods=['GET'])
-def cari():
-    # INPUT USER (Sumber Masalah)
-    keyword = request.args.get('q', '')
 
-    # --- BUKTI 1: SQL INJECTION ---
-    # Batasan Masalah: Mendeteksi SQL Injection
-    # SonarQube akan mendeteksi ini sebagai "Formatting SQL queries is security-sensitive" (Hotspot)
-    conn = sqlite3.connect('data.db')
-    cursor = conn.cursor()
-    # Penggabungan string (+) adalah ciri utama SQL Injection
-    query = "SELECT * FROM produk WHERE nama = '" + keyword + "'"
-    cursor.execute(query) 
+class MyUser(models.Model):
+    name = models.CharField(max_length=200)
 
-    # --- BUKTI 2: XSS (Cross-Site Scripting) ---
-    # Batasan Masalah: Mendeteksi XSS
-    # SonarQube akan mendeteksi ini sebagai "Reflected XSS" atau Hotspot terkait Output
-    # Menampilkan input mentah ke browser tanpa filter
-    return render_template_string("<h1>Hasil Pencarian: " + keyword + "</h1>")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+def query_my_user(request, params, value):
+    with connection.cursor() as cursor:
+        cursor.execute("{0}".format(value))  # Sensitive
+
+    # https://docs.djangoproject.com/en/2.1/ref/models/expressions/#raw-sql-expressions
+
+    RawSQL("select col from %s where mycol = %s and othercol = " + value, ("test",))  # Sensitive
+
+    # https://docs.djangoproject.com/en/2.1/ref/models/querysets/#extra
+
+    MyUser.objects.extra(
+        select={
+            'mycol':  "select col from sometable here mycol = %s and othercol = " + value}, # Sensitive
+           select_params=(someparam,),
+        },
+    )
