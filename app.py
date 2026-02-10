@@ -1,28 +1,28 @@
-from django.db import models
-from django.db import connection
-from django.db import connections
-from django.db.models.expressions import RawSQL
+from flask import Flask
 
-value = input()
+# [TARGET 1] Rule: "Flask secret keys should not be disclosed"
+# Anda punya rule ini di daftar. Ini harusnya langsung BLOCKER.
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'hardcoded_secret_key_12345' 
 
+# [TARGET 2] Rule: "Credentials should not be hard-coded"
+# Anda punya rule ini. Variabel bernama 'password' dengan nilai string pasti kena.
+def database_connect():
+    user = "admin"
+    password = "superSecretPassword123" # <--- INI HARUSNYA MELEDAK (BLOCKER)
+    return True
 
-class MyUser(models.Model):
-    name = models.CharField(max_length=200)
+# [TARGET 3] Rule: "Recursion should not be infinite"
+# Anda punya rule ini. Fungsi yang memanggil dirinya sendiri tanpa henti.
+def infinite_loop():
+    return infinite_loop() # <--- Logic Error (BLOCKER)
 
+# [TARGET 4] Rule: "The 'exec' statement should not be used"
+# Anda punya rule ini di daftar (bawah).
+def dynamic_code():
+    code = "print('Bahaya')"
+    exec(code) # <--- Security Risk (BLOCKER)
 
-def query_my_user(request, params, value):
-    with connection.cursor() as cursor:
-        cursor.execute("{0}".format(value))  # Sensitive
-
-    # https://docs.djangoproject.com/en/2.1/ref/models/expressions/#raw-sql-expressions
-
-    RawSQL("select col from %s where mycol = %s and othercol = " + value, ("test",))  # Sensitive
-
-    # https://docs.djangoproject.com/en/2.1/ref/models/querysets/#extra
-
-    MyUser.objects.extra(
-        select={
-            'mycol':  "select col from sometable here mycol = %s and othercol = " + value}, # Sensitive
-           select_params=(someparam,),
-        },
-    )
+if __name__ == '__main__':
+    database_connect()
+    app.run()
