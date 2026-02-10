@@ -1,23 +1,28 @@
-from flask import Flask, request
-import sqlite3
+from django.db import models
+from django.db import connection
+from django.db import connections
+from django.db.models.expressions import RawSQL
 
-app = Flask(__name__)
+value = input()
 
-@app.route('/cari', methods=['GET'])
-def cari():
-    user_input = request.args.get('q', '')
-    
-    conn = sqlite3.connect('test.db')
-    cursor = conn.cursor()
-    
-    # --- INI YANG DICARI SONARQUBE ---
-    # Rule "Formatting SQL queries" mencari tanda tambah (+) di dalam string SQL
-    # Ini dianggap Security-Sensitive
-    query = "SELECT * FROM users WHERE name = '" + user_input + "'"
-    
-    cursor.execute(query)
-    
-    return "Search Done"
 
-if __name__ == '__main__':
-    app.run(debug=True)
+class MyUser(models.Model):
+    name = models.CharField(max_length=200)
+
+
+def query_my_user(request, params, value):
+    with connection.cursor() as cursor:
+        cursor.execute("{0}".format(value))  # Sensitive
+
+    # https://docs.djangoproject.com/en/2.1/ref/models/expressions/#raw-sql-expressions
+
+    RawSQL("select col from %s where mycol = %s and othercol = " + value, ("test",))  # Sensitive
+
+    # https://docs.djangoproject.com/en/2.1/ref/models/querysets/#extra
+
+    MyUser.objects.extra(
+        select={
+            'mycol':  "select col from sometable here mycol = %s and othercol = " + value}, # Sensitive
+           select_params=(someparam,),
+        },
+    )
