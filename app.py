@@ -10,9 +10,8 @@ def login():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
-    query = "SELECT * FROM users WHERE username = '{0}'".format(user_input)
+    cursor.execute("SELECT * FROM users WHERE username = '" + user_input + "'")
     
-    cursor.execute(query)
     data = cursor.fetchall()
     conn.close()
 
