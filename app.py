@@ -5,26 +5,25 @@ app = Flask(__name__)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Input dari user
     user_input = request.args.get('username', '')
 
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
-    # --- PENTING: KEMBALI KE METODE VARIABEL ---
-    # SonarQube Community lebih mudah mendeteksi jika string SQL 
-    # disimpan dalam variabel terpisah dulu, baru dieksekusi.
+    # --- JURUS PAMUNGKAS: EXEC() ---
+    # Kita membungkus query SQL di dalam fungsi exec().
+    # SonarQube SANGAT MEMBENCI fungsi exec().
+    # Ini akan memicu rule: "Using 'exec' is security-sensitive"
+    # atau "Dynamic code execution".
     
-    # Kita gunakan .format() sesuai deskripsi rule yang Anda kirim:
-    # "Formatted SQL queries can be difficult to maintain... and increase risk"
-    sql_query = "SELECT * FROM users WHERE username = '{0}'".format(user_input)
+    # Teknik ini sering dipakai hacker, jadi ini sangat valid sebagai simulasi serangan.
+    sql_payload = "cursor.execute(\"SELECT * FROM users WHERE username = '" + user_input + "'\")"
+    exec(sql_payload)
     
-    # Jalankan variabel tersebut
-    cursor.execute(sql_query)
-    
-    data = cursor.fetchall()
     conn.close()
 
-    # Bagian ini sudah OK (XSS/Cookie)
+    # --- BAGIAN INI SUDAH SUKSES (XSS/COOKIE) ---
     response = make_response("Login Processed")
     response.set_cookie('session_id', 'rahasia12345')
 
