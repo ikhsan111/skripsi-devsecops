@@ -1,28 +1,25 @@
-from flask import Flask
+from flask import Flask, request, make_response
+import sqlite3
 
-# [TARGET 1] Rule: "Flask secret keys should not be disclosed"
-# Anda punya rule ini di daftar. Ini harusnya langsung BLOCKER.
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'hardcoded_secret_key_12345' 
 
-# [TARGET 2] Rule: "Credentials should not be hard-coded"
-# Anda punya rule ini. Variabel bernama 'password' dengan nilai string pasti kena.
-def database_connect():
-    user = "admin"
-    password = "superSecretPassword123" # <--- INI HARUSNYA MELEDAK (BLOCKER)
-    return True
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    user_input = request.args.get('username', '')
 
-# [TARGET 3] Rule: "Recursion should not be infinite"
-# Anda punya rule ini. Fungsi yang memanggil dirinya sendiri tanpa henti.
-def infinite_loop():
-    return infinite_loop() # <--- Logic Error (BLOCKER)
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
 
-# [TARGET 4] Rule: "The 'exec' statement should not be used"
-# Anda punya rule ini di daftar (bawah).
-def dynamic_code():
-    code = "print('Bahaya')"
-    exec(code) # <--- Security Risk (BLOCKER)
+    query = "SELECT * FROM users WHERE username = '{0}'".format(user_input)
+    
+    cursor.execute(query)
+    data = cursor.fetchall()
+    conn.close()
+
+    response = make_response("Login Processed")
+    response.set_cookie('session_id', 'rahasia12345')
+
+    return response
 
 if __name__ == '__main__':
-    database_connect()
-    app.run()
+    app.run(debug=True)
