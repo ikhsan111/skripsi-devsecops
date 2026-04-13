@@ -1,38 +1,32 @@
-from flask import Flask, make_response, request
+from flask import Flask, request
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
+app.secret_key = "kunci_rahasia_untuk_session"
 
-# =====================================================================
-# SKENARIO 2: Hardcoded Secret Key (Memicu Vulnerability - Blocker)
-# Mengekspos kunci rahasia secara terang-terangan di dalam kode.
-# Referensi: CWE-798
-# =====================================================================
-app.secret_key = "SuperSecretKey_Yang_Seharusnya_Disembunyikan_Di_ENV"
-
-# =====================================================================
-# SKENARIO 5: CSRF Protection Disabled (Memicu Security Hotspot)
-# Mematikan proteksi dasar framework terhadap serangan pemalsuan request.
-# Referensi: CWE-352
-# =====================================================================
-app.config['WTF_CSRF_ENABLED'] = False
+# Menginisialisasi pelindung CSRF untuk seluruh aplikasi
+csrf = CSRFProtect(app)
 
 @app.route('/')
-def index():
-    response = make_response("Sistem sedang diuji oleh Jenkins dan SonarQube!")
+def home():
+    return "Selamat datang di Aplikasi Web. Sistem CSRF sedang diuji."
+
+# =====================================================================
+# SKENARIO 5: PENGUJIAN CSRF DISABLED / EXEMPTED
+# Mengecualikan rute yang mengubah data (POST) dari perlindungan CSRF.
+# Ini adalah Bad Practice (CWE-352) yang pasti ditangkap SonarQube.
+# =====================================================================
+@app.route('/transfer_dana', methods=['POST'])
+@csrf.exempt  # <--- DEKORATOR INI ADALAH PENYEBAB KERENTANAN
+def transfer_dana():
+    rekening_tujuan = request.form.get('rekening')
+    jumlah = request.form.get('jumlah')
     
-    # =====================================================================
-    # SKENARIO 4: Cookie Misconfiguration (Memicu Security Hotspot)
-    # Membuat session cookie sensitif namun tanpa atribut secure=True
-    # Referensi: CWE-1004
-    # =====================================================================
-    response.set_cookie('session_id', 'user_token_12345', secure=False, httponly=False)
+    # Bahaya: Karena ada @csrf.exempt, penyerang bisa membuat web palsu 
+    # yang memaksa browser korban mengirim request POST ke URL ini 
+    # tanpa perlu token validasi.
     
-    return response
+    return f"Berhasil mentransfer Rp {jumlah} ke rekening {rekening_tujuan}!"
 
 if __name__ == '__main__':
-    # =====================================================================
-    # SKENARIO 3: Debug Mode Active (Memicu Security Hotspot)
-    # Menyalakan mode debug di lingkungan produksi secara eksplisit.
-    # Referensi: CWE-489
-    # =====================================================================
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=False)
