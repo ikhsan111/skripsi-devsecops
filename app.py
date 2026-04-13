@@ -1,23 +1,38 @@
-import os
-from flask import Flask, make_response
+from flask import Flask, make_response, request
 
 app = Flask(__name__)
 
 # =====================================================================
-# SKENARIO 1: BASELINE (KODE AMAN)
-# 1. Kunci rahasia dipanggil via Environment Variable (Tidak Hardcoded)
-# 2. CSRF Protection tetap aktif (default)
+# SKENARIO 2: Hardcoded Secret Key (Memicu Vulnerability - Blocker)
+# Mengekspos kunci rahasia secara terang-terangan di dalam kode.
+# Referensi: CWE-798
 # =====================================================================
-app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+app.secret_key = "SuperSecretKey_Yang_Seharusnya_Disembunyikan_Di_ENV"
+
+# =====================================================================
+# SKENARIO 5: CSRF Protection Disabled (Memicu Security Hotspot)
+# Mematikan proteksi dasar framework terhadap serangan pemalsuan request.
+# Referensi: CWE-352
+# =====================================================================
+app.config['WTF_CSRF_ENABLED'] = False
 
 @app.route('/')
 def index():
-    response = make_response("Sistem Berjalan dengan Aman di Lingkungan Produksi!")
+    response = make_response("Sistem sedang diuji oleh Jenkins dan SonarQube!")
     
-    # 3. Cookie diset dengan atribut keamanan penuh (Secure & HttpOnly)
-    response.set_cookie('session_id', 'user_token_12345', secure=True, httponly=True)
+    # =====================================================================
+    # SKENARIO 4: Cookie Misconfiguration (Memicu Security Hotspot)
+    # Membuat session cookie sensitif namun tanpa atribut secure=True
+    # Referensi: CWE-1004
+    # =====================================================================
+    response.set_cookie('session_id', 'user_token_12345', secure=False, httponly=False)
+    
     return response
 
 if __name__ == '__main__':
-    # 4. Mode Debug Dimatikan
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # =====================================================================
+    # SKENARIO 3: Debug Mode Active (Memicu Security Hotspot)
+    # Menyalakan mode debug di lingkungan produksi secara eksplisit.
+    # Referensi: CWE-489
+    # =====================================================================
+    app.run(host='0.0.0.0', port=5000, debug=True)
