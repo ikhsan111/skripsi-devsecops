@@ -1,25 +1,23 @@
+import os
 from flask import Flask, session
 
 app = Flask(__name__)
 
 # ==========================================
-# SKENARIO 2: HARDCODED SECRET KEY (CWE-798)
+# SKENARIO 1: BASELINE (KODE AMAN)
 # ==========================================
-# SonarQube akan langsung memblokir pipeline karena baris di bawah ini.
-# Kunci rahasia ditulis langsung (hardcoded) di dalam source code.
+# Kunci diambil dari Environment Variable server/Docker.
+# Jika tidak ada, sistem akan error, tapi kode tetap aman karena 
+# kunci rahasia tidak pernah ditulis di dalam file ini.
 
-app.secret_key = "R4h4s1a_N3g4rA_123!!" 
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
-# Alternatif penulisan yang juga akan dideteksi oleh SonarQube:
-# app.config['SECRET_KEY'] = "R4h4s1a_N3g4rA_123!!.
 # ==========================================
 
 @app.route('/')
 def home():
-    # Contoh penggunaan secret key untuk mengamankan session
     session['user'] = 'ikhsan_admin'
-    return "Selamat datang! Session telah dibuat menggunakan Hardcoded Secret Key."
+    return "Selamat datang! Aplikasi berjalan aman."
 
 if __name__ == '__main__':
-    # Mode debug=True juga biasanya menjadi temuan (Hotspot) di SonarQube
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
