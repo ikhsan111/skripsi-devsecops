@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = "R4h4s1a_N3g4rA_123!!" 
 
 # Alternatif penulisan yang juga akan dideteksi oleh SonarQube:
-# app.config['SECRET_KEY'] = "R4h4s1a_N3g4rA_123!!"
+# app.config['SECRET_KEY'] = "R4h4s1a_N3g4rA_123!!.
 # ==========================================
 
 @app.route('/')
