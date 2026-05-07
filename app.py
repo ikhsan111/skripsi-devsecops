@@ -1,16 +1,25 @@
-from flask import Flask
-import hashlib
+from flask import Flask, session
 
 app = Flask(__name__)
 
+# ==========================================
+# SKENARIO 2: HARDCODED SECRET KEY (CWE-798)
+# ==========================================
+# SonarQube akan langsung memblokir pipeline karena baris di bawah ini.
+# Kunci rahasia ditulis langsung (hardcoded) di dalam source code.
+
+app.secret_key = "R4h4s1a_N3g4rA_123!!" 
+
+# Alternatif penulisan yang juga akan dideteksi oleh SonarQube:
+# app.config['SECRET_KEY'] = "R4h4s1a_N3g4rA_123!!"
+# ==========================================
+
 @app.route('/')
-def index():
-    # =====================================================================
-    # SKENARIO 3 (BARU): Security Misconfiguration (Weak Cryptography)
-    # Mengonfigurasi sistem untuk menggunakan algoritma MD5 yang sudah usang.
-    # Ini PASTI akan memicu alarm Security Hotspot dari SonarQube.
-    # =====================================================================
-    data_rahasia = "password_pengguna_123"
-    konfigurasi_hash_lemah = hashlib.md5(data_rahasia.encode()).hexdigest()
-    
-    return f"Sistem berjalan. Hash MD5: {konfigurasi_hash_lemah}"
+def home():
+    # Contoh penggunaan secret key untuk mengamankan session
+    session['user'] = 'ikhsan_admin'
+    return "Selamat datang! Session telah dibuat menggunakan Hardcoded Secret Key."
+
+if __name__ == '__main__':
+    # Mode debug=True juga biasanya menjadi temuan (Hotspot) di SonarQube
+    app.run(host='0.0.0.0', port=5000, debug=True)
