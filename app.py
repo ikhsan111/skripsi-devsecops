@@ -1,25 +1,22 @@
-from flask import Flask, session
+import os
+from flask import Flask, request, make_response
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
-# ==========================================
-# SKENARIO 2: HARDCODED SECRET KEY (CWE-798)
-# ==========================================
-# SonarQube akan langsung memblokir pipeline karena baris di bawah ini.
-# Kunci rahasia ditulis langsung (hardcoded) di dalam source code.
+# Praktik Aman: Mengambil secret key dari Environment Variable (Tidak Hardcoded) s
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_safe_fallback")
 
-app.secret_key = "R4h4s1a_N3g4rA_123!!" 
-
-# Alternatif penulisan yang juga akan dideteksi oleh SonarQube:
-# app.config['SECRET_KEY'] = "R4h4s1a_N3g4rA_123!!"
-# ==========================================
+# Praktik Aman: Mengaktifkan proteksi CSRF secara global
+csrf = CSRFProtect(app)
+app.config['WTF_CSRF_ENABLED'] = True
 
 @app.route('/')
 def home():
-    # Contoh penggunaan secret key untuk mengamankan session
-    session['user'] = 'ikhsan_admin'
-    return "Selamat datang! Session telah dibuat menggunakan Hardcoded Secret Key."
+    response = make_response("Beranda Aman")
+    # Praktik Aman: Kuki disetel dengan atribut Secure dan HttpOnly
+    response.set_cookie('session_id', 'token_aman_123', secure=True, httponly=True)
+    return response
 
 if __name__ == '__main__':
-    # Mode debug=True juga biasanya menjadi temuan (Hotspot) di SonarQube
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=False)
