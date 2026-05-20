@@ -1,22 +1,25 @@
-import sqlite3
-from flask import Flask, request
+from flask import Flask, Response
 
 app = Flask(__name__)
 
-# --- SKENARIO KERENTANAN: CWE-89 (SQL Injection) ---
-# SonarQube akan langsung memblokir ini sebagai VULNERABILITY, bukan HOTSPOT.
-@app.route('/user')
-def get_user():
-    user_id = request.args.get('id')
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
+@app.route('/set-cookie')
+def set_insecure_cookie():
+    response = Response("Cookie diset dengan tidak aman!")
     
-    # KODE RENTAN: Menggunakan format string langsung ke query SQL
-    query = "SELECT * FROM users WHERE id = '%s'" % user_id
-    cursor.execute(query) 
+    # --- SKENARIO KERENTANAN: CWE-614 (Insecure Cookie) ---
+    # SonarQube akan mendeteksi baris ini karena:
+    # 1. secure=False: Cookie dikirim via HTTP (rentan MitM)
+    # 2. httponly=False: Cookie dapat dicuri oleh JavaScript (rentan XSS)
+    response.set_cookie(
+        'session_id', 
+        'user_secret_12345', 
+        secure=False, 
+        httponly=False, 
+        samesite=None
+    )
+    # -----------------------------------------------------
     
-    return "User ditemukan"
-# ---------------------------------------------------
+    return response
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
