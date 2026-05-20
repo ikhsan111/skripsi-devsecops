@@ -1,12 +1,16 @@
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect, csrf
 
 app = Flask(__name__)
-csrf = CSRFProtect(app)
 
-# Pola ini adalah analogi langsung dari @csrf_exempt di Django
-# SonarQube akan mendeteksi decorator ini sebagai "Disabling CSRF protection"
-@app.route('/update-profile', methods=['POST'])
-@csrf.exempt 
-def update_profile():
-    return "Profil diperbarui tanpa proteksi CSRF"
+@app.route('/')
+def index():
+    # Simulasi kesalahan yang memicu error
+    # Jika debug=True, stack trace akan muncul di browser
+    return 1 / 0 
+
+# --- SKENARIO KERENTANAN: CWE-200 (Exposure of Sensitive Information) ---
+# Mengaktifkan 'debug=True' di lingkungan produksi adalah miskonfigurasi fatal.
+# Hal ini melanggar prinsip keamanan dasar karena mengekspos detail sistem.
+if __name__ == '__main__':
+    app.run(debug=True) 
+# ------------------------------------------------------------------------
