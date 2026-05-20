@@ -1,21 +1,22 @@
-from flask import Flask, session
+import sqlite3
+from flask import Flask, request
 
 app = Flask(__name__)
 
-# Konfigurasi ini secara eksplisit melanggar standar keamanan
-# SonarQube akan mendeteksi SESSION_COOKIE_SECURE=False sebagai Hotspot
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=False, 
-    SESSION_COOKIE_SECURE=False,   
-    SESSION_COOKIE_SAMESITE=None   
-)
-
-# Endpoint ini akan memicu deteksi karena tidak ada proteksi token
-@app.route('/transfer_funds', methods=['POST'])
-def transfer():
-    # Simulasi transaksi tanpa token CSRF
-    # SonarQube akan mendeteksi bahwa ini adalah 'state-changing request'
-    return "Dana berhasil ditransfer"
+# --- SKENARIO KERENTANAN: CWE-89 (SQL Injection) ---
+# SonarQube akan langsung memblokir ini sebagai VULNERABILITY, bukan HOTSPOT.
+@app.route('/user')
+def get_user():
+    user_id = request.args.get('id')
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    
+    # KODE RENTAN: Menggunakan format string langsung ke query SQL
+    query = "SELECT * FROM users WHERE id = '%s'" % user_id
+    cursor.execute(query) 
+    
+    return "User ditemukan"
+# ---------------------------------------------------
 
 if __name__ == '__main__':
     app.run()
