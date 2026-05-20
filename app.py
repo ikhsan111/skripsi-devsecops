@@ -1,21 +1,23 @@
-import hashlib
-from flask import Flask, request
+from flask import Flask, session
 
 app = Flask(__name__)
 
-# --- SKENARIO KERENTANAN: CWE-327 (Broken Cryptographic Algorithm) ---
-def get_hash(data):
-    # MD5 sudah usang (deprecated) dan tidak aman untuk keperluan keamanan
-    # SonarQube akan mendeteksi ini sebagai "Security Hotspot"
-    return hashlib.md5(data.encode()).hexdigest()
-# ---------------------------------------------------------------------
+# --- SKENARIO KERENTANAN: CWE-614 (Insecure Cookie) ---
+# Secara default, Flask session cookie mungkin tidak memiliki atribut 'Secure'.
+# Jika dijalankan di lingkungan produksi tanpa konfigurasi yang benar, 
+# cookie ini rentan terhadap serangan Man-in-the-Middle (MitM).
+app.secret_key = 'kunci-rahasia-banget'
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=False, # Rentan XSS
+    SESSION_COOKIE_SECURE=False,   # Rentan intersepsi melalui HTTP
+    SESSION_COOKIE_SAMESITE=None   # Rentan CSRF
+)
+# -----------------------------------------------------
 
-@app.route('/login', methods=['POST'])
-def login():
-    password = request.form.get('password')
-    hashed_password = get_hash(password)
-    # Logika autentikasi...
-    return f"Password di-hash dengan MD5: {hashed_password}"
+@app.route('/')
+def index():
+    session['user'] = 'admin'
+    return "Cookie sesi telah diset tanpa atribut keamanan."
 
 if __name__ == '__main__':
     app.run(debug=True)
