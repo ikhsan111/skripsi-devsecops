@@ -1,25 +1,18 @@
-from flask import Flask, Response
+from flask import Flask, request
 
 app = Flask(__name__)
 
-@app.route('/set-cookie')
-def set_insecure_cookie():
-    response = Response("Cookie diset dengan tidak aman!")
-    
-    # --- SKENARIO KERENTANAN: CWE-614 (Insecure Cookie) ---
-    # SonarQube akan mendeteksi baris ini karena:
-    # 1. secure=False: Cookie dikirim via HTTP (rentan MitM)
-    # 2. httponly=False: Cookie dapat dicuri oleh JavaScript (rentan XSS)
-    response.set_cookie(
-        'session_id', 
-        'user_secret_12345', 
-        secure=False, 
-        httponly=False, 
-        samesite=None
-    )
-    # -----------------------------------------------------
-    
-    return response
+# --- SKENARIO KERENTANAN: CWE-352 (CSRF) ---
+# Aplikasi ini melakukan aksi sensitif (mengubah email) 
+# melalui POST request tanpa validasi token CSRF.
+@app.route('/change-email', methods=['POST'])
+def change_email():
+    new_email = request.form.get('email')
+    # Simulasi pembaruan database
+    # Tanpa CSRF token, penyerang bisa membuat form di situs lain 
+    # yang mengirimkan request ke sini saat pengguna login.
+    return f"Email berhasil diperbarui ke: {new_email}"
+# -------------------------------------------
 
 if __name__ == '__main__':
     app.run(debug=True)
