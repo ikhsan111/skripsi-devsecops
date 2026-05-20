@@ -1,16 +1,12 @@
-from flask import Flask
+import os
+from flask import request
 
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    # Simulasi kesalahan yang memicu error
-    # Jika debug=True, stack trace akan muncul di browser
-    return 1 / 0 
-
-# --- SKENARIO KERENTANAN: CWE-200 (Exposure of Sensitive Information) ---
-# Mengaktifkan 'debug=True' di lingkungan produksi adalah miskonfigurasi fatal.
-# Hal ini melanggar prinsip keamanan dasar karena mengekspos detail sistem.
-if __name__ == '__main__':
-    app.run(debug=True) 
-# ------------------------------------------------------------------------
+# --- SKENARIO CWE-22 (Path Traversal) ---
+# SonarQube akan mendeteksi ini sebagai Vulnerability (Critical)
+@app.route('/read')
+def read_file():
+    filename = request.args.get('file')
+    # Penyerang bisa melakukan traversal: ?file=../../etc/passwd
+    with open(os.path.join('/var/www/uploads', filename), 'r') as f:
+        return f.read()
+# ----------------------------------------
