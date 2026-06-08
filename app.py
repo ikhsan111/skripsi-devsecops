@@ -4,7 +4,7 @@ from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
-# Praktik Aman: Mengambil secret key dari Environment Variable (Tidak Hardcoded) 
+# Praktik Aman: Mengambil secret key dari Environment Variable (Tidak Hardcoded) ss
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_safe_fallback")
 
 # Praktik Aman: Mengaktifkan proteksi CSRF secara global
