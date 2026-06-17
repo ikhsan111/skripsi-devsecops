@@ -1,22 +1,16 @@
-import os
-from flask import Flask, request, make_response
-from flask_wtf.csrf import CSRFProtect
+from flask import Flask
 
 app = Flask(__name__)
 
-# Praktik Aman: Mengambil secret key dari Environment Variable (Tidak Hardcoded) s
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_safe_fallback")
-
-# Praktik Aman: Mengaktifkan proteksi CSRF secara global
-csrf = CSRFProtect(app)
-app.config['WTF_CSRF_ENABLED'] = True
+# --- SKENARIO KERENTANAN: CWE-798 (Hardcoded Secret Key) ---
+# Kunci rahasia didefinisikan secara statis di dalam source code.
+# Ini sangat berbahaya karena kunci akan masuk ke dalam Version Control (Git).
+app.config['SECRET_KEY'] = 'sangat-rahasia-banget-123456789'
+# -----------------------------------------------------------
 
 @app.route('/')
-def home():
-    response = make_response("Beranda Aman")
-    # Praktik Aman: Kuki disetel dengan atribut Secure dan HttpOnly
-    response.set_cookie('session_id', 'token_aman_123', secure=True, httponly=True)
-    return response
+def hello_world():
+    return 'Halo, sistem ini rentan!'
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
